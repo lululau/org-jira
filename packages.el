@@ -10,7 +10,7 @@
 ;;
 ;;; License: GPLv3
 
-(defvar org-jira-packages '(org org-jira))
+(defvar org-jira-packages '(org-jira ox-jira))
 
 (defvar org-jira-excluded-packages '() "List of packages to exclude.")
 
@@ -42,3 +42,6 @@
         "jtj" 'org-jira-todo-to-jira)
       )
     ))
+
+(defun org-jira/init-ox-jira ()
+  (use-package ox-jira))
