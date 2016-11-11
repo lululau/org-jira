@@ -261,6 +261,12 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
   (if org-jira-mode
       (run-mode-hooks 'org-jira-mode-hook)))
 
+(defun org-jira-insert-raw-text (&rest raw)
+  (apply 'insert (mapcar (lambda (d) (string-as-multibyte (string-as-unibyte d))) raw)))
+
+(defun org-jira-org-entry-put (pom property value)
+  (org-entry-put pom property (string-as-multibyte (string-as-unibyte value))))
+
 (defun org-jira-get-project-name (proj)
   (org-jira-find-value proj 'name))
 
@@ -313,13 +319,13 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
                       (unless (looking-at "^")
                         (insert "\n"))
                       (insert "* ")
-                      (insert proj-headline)
+                      (org-jira-insert-raw-text proj-headline)
                       (org-narrow-to-subtree))
-                    (org-entry-put (point) "name" (org-jira-get-project-name proj))
-                    (org-entry-put (point) "key" (org-jira-find-value proj 'key))
-                    (org-entry-put (point) "lead" (org-jira-get-project-lead proj))
-                    (org-entry-put (point) "ID" (org-jira-find-value proj 'id))
-                    (org-entry-put (point) "url" (format "%s/browse/%s" (replace-regexp-in-string "/*$" "" jiralib-url) (org-jira-find-value proj 'key))))))
+                    (org-jira-org-entry-put (point) "name" (org-jira-get-project-name proj))
+                    (org-jira-org-entry-put (point) "key" (org-jira-find-value proj 'key))
+                    (org-jira-org-entry-put (point) "lead" (org-jira-get-project-lead proj))
+                    (org-jira-org-entry-put (point) "ID" (org-jira-find-value proj 'id))
+                    (org-jira-org-entry-put (point) "url" (format "%s/browse/%s" (replace-regexp-in-string "/*$" "" jiralib-url) (org-jira-find-value proj 'key))))))
               oj-projs)))))
 
 (defun org-jira-get-issue-components (issue)
@@ -442,7 +448,7 @@ With a prefix argument, allow you to customize the jql.  See
       (mapc (lambda (issue)
               (let ((issue-id (org-jira-get-issue-key issue))
                     (issue-summary (org-jira-get-issue-summary issue)))
-                (insert (format "- [jira:%s] %s\n" issue-id issue-summary))))
+                (org-jira-insert-raw-text (format "- [jira:%s] %s\n" issue-id issue-summary))))
             issues))
     (switch-to-buffer issues-headonly-buffer)))
 
@@ -497,7 +503,7 @@ See`org-jira-get-issue-list'"
                         (insert "\n"))
                       (insert "* "))
                     (let ((status (org-jira-get-issue-val 'status issue)))
-                      (insert (concat (cond (org-jira-use-status-as-todo
+                      (org-jira-insert-raw-text (concat (cond (org-jira-use-status-as-todo
                                              (upcase (replace-regexp-in-string " " "-" status)))
                                             ((member status org-jira-done-states) "DONE")
                                             ("TODO")) " "
@@ -517,9 +523,9 @@ See`org-jira-get-issue-list'"
                     (mapc (lambda (entry)
                             (let ((val (org-jira-get-issue-val entry issue)))
                               (when (and val (not (string= val "")))
-                                (org-entry-put (point) (symbol-name entry) val))))
+                                (org-jira-org-entry-put (point) (symbol-name entry) val))))
                           '(assignee reporter type priority resolution status components created updated))
-                    (org-entry-put (point) "ID" (org-jira-get-issue-key issue))
+                    (org-jira-org-entry-put (point) "ID" (org-jira-get-issue-key issue))
 
                     (mapc (lambda (heading-entry)
                             (ensure-on-issue-id
@@ -538,9 +544,9 @@ See`org-jira-get-issue-list'"
                                       (org-insert-heading)
                                     (goto-char (point-max))
                                     (org-insert-subheading t))
-                                  (insert entry-heading "\n"))
+                                  (org-jira-insert-raw-text entry-heading "\n"))
 
-                                (insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
+                                (org-jira-insert-raw-text (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
                           '(description))
                     (org-jira-update-comments-for-current-issue)
                     (org-jira-update-worklogs-for-current-issue)
@@ -606,7 +612,7 @@ See`org-jira-get-issue-list'"
   (interactive)
   (let ((issue-id (org-jira-get-from-org 'issue 'key)))
     (with-temp-buffer
-      (insert issue-id)
+      (org-jira-insert-raw-text issue-id)
       (kill-region (point-min) (point-max)))))
 
 (defun org-jira-get-comment-id (comment)
@@ -637,16 +643,16 @@ See`org-jira-get-issue-list'"
                 (unless (looking-at "^")
                   (insert "\n"))
                 (insert "** ")
-                (insert comment-headline "\n")
+                (org-jira-insert-raw-text comment-headline "\n")
                 (org-narrow-to-subtree)
-                (org-entry-put (point) "ID" comment-id)
+                (org-jira-org-entry-put (point) "ID" comment-id)
                 (let ((created (org-jira-get-comment-val 'created comment))
                       (updated (org-jira-get-comment-val 'updated comment)))
-                  (org-entry-put (point) "created" created)
+                  (org-jira-org-entry-put (point) "created" created)
                   (unless (string= created updated)
-                    (org-entry-put (point) "updated" updated)))
+                    (org-jira-org-entry-put (point) "updated" updated)))
                 (goto-char (point-max))
-                (insert (replace-regexp-in-string "^" "  " (or (org-jira-find-value comment 'body) ""))))))
+                (org-jira-insert-raw-text (replace-regexp-in-string "^" "  " (or (org-jira-find-value comment 'body) ""))))))
           (cl-mapcan (lambda (comment) (if (string= (org-jira-get-comment-author comment)
                                                "admin")
                                       nil
@@ -675,18 +681,18 @@ See`org-jira-get-issue-list'"
                 (unless (looking-at "^")
                   (insert "\n"))
                 (insert "** ")
-                (insert worklog-headline "\n")
+                (org-jira-insert-raw-text worklog-headline "\n")
                 (org-narrow-to-subtree)
-                (org-entry-put (point) "ID" worklog-id)
+                (org-jira-org-entry-put (point) "ID" worklog-id)
                 (let ((created (org-jira-get-worklog-val 'created worklog))
                       (updated (org-jira-get-worklog-val 'updated worklog)))
-                  (org-entry-put (point) "created" created)
+                  (org-jira-org-entry-put (point) "created" created)
                   (unless (string= created updated)
-                    (org-entry-put (point) "updated" updated)))
-                (org-entry-put (point) "startDate" (org-jira-get-worklog-val 'startDate worklog))
-                (org-entry-put (point) "timeSpent" (org-jira-get-worklog-val 'timeSpent worklog))
+                    (org-jira-org-entry-put (point) "updated" updated)))
+                (org-jira-org-entry-put (point) "startDate" (org-jira-get-worklog-val 'startDate worklog))
+                (org-jira-org-entry-put (point) "timeSpent" (org-jira-get-worklog-val 'timeSpent worklog))
                 (goto-char (point-max))
-                (insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'comment worklog)) ""))))))
+                (org-jira-insert-raw-text (replace-regexp-in-string "^" "  " (or (cdr (assoc 'comment worklog)) ""))))))
           worklogs)))
 
 
@@ -1043,7 +1049,7 @@ it is a symbol, it will be converted to string."
   (ensure-on-comment
    (goto-char (point-min))
    ;; so that search for :END: won't fail
-   (org-entry-put (point) "ID" comment-id)
+   (org-jira-org-entry-put (point) "ID" comment-id)
    (search-forward ":END:")
    (forward-line)
    (org-jira-strip-string (buffer-substring-no-properties (point) (point-max)))))
@@ -1053,7 +1059,7 @@ it is a symbol, it will be converted to string."
   (ensure-on-worklog
    (goto-char (point-min))
    ;; so that search for :END: won't fail
-   (org-entry-put (point) "ID" worklog-id)
+   (org-jira-org-entry-put (point) "ID" worklog-id)
    (search-forward ":END:")
    (forward-line)
    (org-jira-strip-string (buffer-substring-no-properties (point) (point-max)))))
