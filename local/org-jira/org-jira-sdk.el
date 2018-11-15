@@ -157,7 +157,7 @@
      :reporter (path '(fields reporter name)) ; reporter could be an object of its own slot values
      :resolution (path '(fields resolution name))  ; confirm
      :start-date (path '(fields start-date))  ; confirm
-     :status (org-jira-decode (path '(fields status name)))
+     :status (path '(fields status name))
      :summary (path '(fields summary))
      :type (path '(fields issuetype name))
      :updated (path '(fields updated))  ; confirm

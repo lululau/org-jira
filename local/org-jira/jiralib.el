@@ -382,7 +382,7 @@ request.el, so if at all possible, it should be avoided."
                                                                                    (maxResults . ,(second params)))))))
                                         nil))
       ('getPriorities (jiralib--rest-call-it
-                       "/rest/api/2/priority"))
+                       "/rest/api/2/priority" :parser 'jiralib--set-multibyte))
       ('getProjects (jiralib--rest-call-it "rest/api/2/project"))
       ('getProjectsNoSchemes (append (jiralib--rest-call-it
                                       "/rest/api/2/project"
@@ -422,21 +422,29 @@ Pass ARGS to jiralib-call."
         (jiralib-use-restapi nil))
     (apply #'jiralib-call args)))
 
+(defun jiralib--set-multibyte ()
+  (decode-coding-region (point-min) (point-max) 'utf-8-unix)
+  (json-read))
+
 (defun jiralib--rest-call-it (api &rest args)
   "Invoke the corresponding jira rest method API.
 Invoking COMPLETE-CALLBACK when the
 JIRALIB-COMPLETE-CALLBACK is non-nil, request finishes, and
 passing ARGS to REQUEST."
-  (append (request-response-data
-           (apply #'request (if (string-match "^http[s]*://" api) api ;; If an absolute path, use it
-                              (concat (replace-regexp-in-string "/*$" "/" jiralib-url)
-                                      (replace-regexp-in-string "^/*" "" api)))
-                  :sync (not jiralib-complete-callback)
-                  :headers `(,jiralib-token ("Content-Type" . "application/json"))
-                  :parser 'json-read
-                  :complete jiralib-complete-callback
-             args))
-          nil))
+  (let ((parser 'json-read))
+    (if (plist-get args :parser) (setq parser (plist-get args :parser)))
+    (if (plist-get args :data)
+        (plist-put args :data (string-as-unibyte (plist-get args :data))))
+    (append (request-response-data
+             (apply #'request (if (string-match "^http[s]*://" api) api ;; If an absolute path, use it
+                                (concat (replace-regexp-in-string "/*$" "/" jiralib-url)
+                                        (replace-regexp-in-string "^/*" "" api)))
+                    :sync (not jiralib-complete-callback)
+                    :headers `(,jiralib-token ("Content-Type" . "application/json"))
+                    :complete jiralib-complete-callback
+                    :parser parser
+                    args))
+            nil)))
 
 (defun jiralib--call-it (method &rest params)
   "Invoke the JIRA METHOD with supplied PARAMS.
