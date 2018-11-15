@@ -308,9 +308,9 @@ request.el, so if at all possible, it should be avoided."
       (call-interactively 'jiralib-login))
     (case (intern method)
       ('getStatuses (jiralib--rest-call-it "/rest/api/2/status"))
-      ('getIssueTypes (jiralib--rest-call-it "/rest/api/2/issuetype"))
+      ('getIssueTypes (jiralib--rest-call-it "/rest/api/2/issuetype"  :parser 'jiralib--set-multibyte))
       ('getIssueTypesByProject
-       (let ((response (jiralib--rest-call-it (format "/rest/api/2/project/%s" (first params)))))
+       (let ((response (jiralib--rest-call-it (format "/rest/api/2/project/%s" (first params))  :parser 'jiralib--set-multibyte)))
          (cl-coerce (cdr (assoc 'issueTypes response)) 'list)))
       ('getUser (jiralib--rest-call-it "/rest/api/2/user" :params `((username . ,(first params)))))
       ('getVersions (jiralib--rest-call-it (format "/rest/api/2/project/%s/versions" (first params))))
