@@ -39,6 +39,9 @@
         "jsc" 'org-jira-create-subtask
         "jsg" 'org-jira-get-subtasks
         "jcu" 'org-jira-update-comment
+        "jca" 'org-jira-add-comment
+        "jia" 'org-jira-assign-issue
+        "jil" 'org-jira-org-clock-to-jira-worklog
         "jtj" 'org-jira-todo-to-jira)
       )
     ))
